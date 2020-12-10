@@ -9,7 +9,6 @@ import os
 import random
 import time
 
-import ESMF
 import numpy as np
 from netCDF4 import Dataset
 
@@ -442,6 +441,9 @@ def ncar_temp_hrrr_bias_correct(input_forcings, config_options, mpi_config, forc
 
     # determine if we're in AnA or SR configuration
     if config_options.ana_flag == 1:
+        hh -= config_options.output_freq / 60
+        if hh < 0:
+            hh += 24
         net_bias_AA = 0.019
         diurnal_ampl_AA = -0.06
         diurnal_offs_AA = 1.5
@@ -629,6 +631,7 @@ def ncar_wspd_hrrr_bias_correct(input_forcings, config_options, mpi_config, forc
 
     date_current = config_options.current_output_date
     hh = float(date_current.hour)
+    MM = float(date_current.month)
 
     fhr = config_options.current_output_step
 
@@ -644,14 +647,17 @@ def ncar_wspd_hrrr_bias_correct(input_forcings, config_options, mpi_config, forc
 
     # determine if we're in AnA or SR configuration
     if config_options.ana_flag == 1:
+        hh -= config_options.output_freq / 60
+        if hh < 0:
+            hh += 24
         net_bias_AA = 0.23
         diurnal_ampl_AA = -0.13
         diurnal_offs_AA = -0.6
         monthly_ampl_AA = 0.0
         monthly_offs_AA = 0.0
 
-        bias_corr = net_bias_AA + diurnal_ampl_AA * math.sin(diurnal_offs_AA + hh / 24 * 2 * math.pi) + \
-                    monthly_ampl_AA * math.sin(monthly_offs_AA + MM / 12 * 2*math.pi)
+        wspd_bias_corr = net_bias_AA + diurnal_ampl_AA * math.sin(diurnal_offs_AA + hh / 24 * 2 * math.pi) + \
+                         monthly_ampl_AA * math.sin(monthly_offs_AA + MM / 12 * 2*math.pi)
     else:
         net_bias_SR = -0.03
         diurnal_ampl_SR = -0.15
@@ -662,9 +668,9 @@ def ncar_wspd_hrrr_bias_correct(input_forcings, config_options, mpi_config, forc
 
         fhr = config_options.current_output_step
 
-        bias_corr = net_bias_SR + fhr * fhr_mult_SR + \
-                    diurnal_ampl_SR * math.sin(diurnal_offs_SR + hh / 24 * 2*math.pi) + \
-                    monthly_ampl_SR * math.sin(monthly_offs_SR + MM / 12 * 2*math.pi)
+        wspd_bias_corr = net_bias_SR + fhr * fhr_mult_SR + \
+                         diurnal_ampl_SR * math.sin(diurnal_offs_SR + hh / 24 * 2*math.pi) + \
+                         monthly_ampl_SR * math.sin(monthly_offs_SR + MM / 12 * 2*math.pi)
 
     wspd = wspd + wspd_bias_corr
     wspd = np.where(wspd < 0, 0, wspd)
