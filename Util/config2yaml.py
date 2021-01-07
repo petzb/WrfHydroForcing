@@ -3,6 +3,7 @@
 import argparse
 import sys
 from pprint import pprint
+import configparser
 
 import numpy as np
 import yaml
@@ -63,7 +64,7 @@ def convert(config_file, yaml_file):
     config_params = vars(config_old)
     #pprint(config_params)
 
-    out_yaml = {'Input':[],'Output':{},'Retrospective':{},'Forecast':{},'Geospatial':{},'Regridding':{}, 'SuppForcing':{},'Ensembles':{}}
+    out_yaml = {'Input':[],'Output':{},'Retrospective':{},'Forecast':{},'Geospatial':{},'Regridding':{}, 'SuppForcing':{}}
     custom_count = 0
     for i in range(len(config_params['input_forcings'])):
         input_dict = {}
@@ -95,7 +96,53 @@ def convert(config_file, yaml_file):
         input_dict['Downscaling']['Humidity'] = config.DownScaleHumidEnum(config_params['q2dDownscaleOpt'][i]).name
         input_dict['Downscaling']['ParamDir'] = config_params['dScaleParamDirs'][i]
         out_yaml['Input'].append(input_dict)
-        
+
+    out_yaml['Output']['Frequency'] = config_params['output_freq']
+    out_yaml['Output']['Dir'] = config_params['output_dir']
+    out_yaml['Output']['ScratchDir'] = config_params['scratch_dir']
+    out_yaml['Output']['CompressOutput'] = bool(config_params['useCompression'])
+    out_yaml['Output']['FloatOutput'] = config.OutputFloatEnum(config_params['useFloats']).name
+
+    out_yaml['Retrospective']['Flag'] = bool(config_params['retro_flag'])
+
+    #Due to internal config_v1.py logic that modifies b_date_proc and e_date_proc
+    configpsr = configparser.ConfigParser()
+    configpsr.read(config_file)
+
+    if out_yaml['Retrospective']['Flag']:
+        out_yaml['Retrospective']['BDateProc'] = configparser['Retrospective']['BDateProc']
+        out_yaml['Retrospective']['EDateProc'] = configparser['Retrospective']['EDateProc']
+    
+    out_yaml['Forecast']['AnAFlag'] = bool(config_params['ana_flag'])
+    out_yaml['Forecast']['LookBack'] = config_params['look_back']
+    out_yaml['Forecast']['RefcstBDateProc'] = configpsr['Forecast']['RefcstBDateProc']
+    out_yaml['Forecast']['RefcstEDateProc'] = configpsr['Forecast']['RefcstEDateProc']
+    out_yaml['Forecast']['Frequency'] = config_params['fcst_freq']
+    out_yaml['Forecast']['Shift'] = config_params['fcst_shift']
+
+    out_yaml['Geospatial']['GeogridIn'] = config_params['geogrid']
+    out_yaml['Geospatial']['SpatialMetaIn'] = config_params['spatial_meta']
+
+    out_yaml['Regridding']['WeightsDir'] = config_params['weightsDir']
+
+    for i in range(len(config_params['supp_precip_forcings'])):
+        out_yaml['SuppForcing']['Pcp'] = config.SuppForcingPcpEnum(config_params['supp_precip_forcings'][i]).name
+        out_yaml['SuppForcing']['PcpType'] = config_params['supp_precip_file_types'][i]
+        out_yaml['SuppForcing']['PcpDir'] = config_params['supp_precip_dirs'][i]
+        out_yaml['SuppForcing']['PcpMandatory'] = bool(config_params['supp_precip_mandatory'][i])
+        out_yaml['SuppForcing']['RegirdOptPcp'] = config_params['regrid_opt_supp_pcp'][i]
+        out_yaml['SuppForcing']['PcpTemporalInterp'] = config_params['suppTemporalInterp'][i]
+        out_yaml['SuppForcing']['PcpInputOffsets'] = config_params['supp_input_offsets'][i]
+        if config_params['rqiMethod']:
+            out_yaml['SuppForcing']['RqiMethod'] = config.SuppForcingRqiMethodEnum(config_params['rqiMethod']).name
+        else:
+            out_yaml['SuppForcing']['RqiMethod'] = "NONE"
+        if config_params['rqiThresh']:
+            out_yaml['SuppForcing']['RqiThreshold'] = config_params['rqiThresh']
+        out_yaml['SuppForcing']['PcpParamDir'] = config_params['supp_precip_param_dir']
+        if config_params['cfsv2EnsMember']:
+            out_yaml['SuppForcings']['Ensembles']['cfsEnsNumber'] = config_params['cfsv2EnsMember'][i]
+
     print(yaml.dump(out_yaml,default_flow_style=False))
 
     #pprint(compare_old_new(config_file, yaml_file))
