@@ -1072,18 +1072,14 @@ class ConfigOptions:
             #For compatability only keep the first PcpParamDir
             self.supp_precip_param_dir = self.supp_precip_param_dir[0]
 
-        try:
-            ensembles = config['Ensembles']
-        except KeyError:
-            err_handler.err_out_screen('Unable to locate Ensembles map in configuration file.')
-            
+
         # Read in Ensemble information
         # Read in CFS ensemble member information IF we have chosen CFSv2 as an input
         # forcing.
         for optTmp in self.input_forcings:
             if optTmp == 7:
                 try:
-                    self.cfsv2EnsMember = ensembles['cfsEnsNumber']
+                    self.cfsv2EnsMember = input['Ensembles']['cfsEnsNumber']
                 except KeyError:
                     err_handler.err_out_screen('Unable to locate Ensembles[\'cfsEnsNumber\'] in the configuration file')
                 if self.cfsv2EnsMember < 1 or self.cfsv2EnsMember > 4:

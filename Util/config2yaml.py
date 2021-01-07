@@ -18,7 +18,7 @@ Example Usage:
 
 export PYTHONPATH=$PYTHONPATH:~/git/WrfHydroForcing/
 export PYTHONPATH=$PYTHONPATH:~/git/WrfHydroForcing/core
-./config2yaml.py ../Test/template_forcing_engine_AnA_v2.config ../Test/template_forcing_engine_AnA_v2.yaml
+./config2yaml.py ../Test/template_forcing_engine_AnA_v2.config ../Test/template_forcing_engine_AnA_v2_example.yaml
 """
 
 
@@ -64,7 +64,7 @@ def convert(config_file, yaml_file):
     config_params = vars(config_old)
     #pprint(config_params)
 
-    out_yaml = {'Input':[],'Output':{},'Retrospective':{},'Forecast':{},'Geospatial':{},'Regridding':{}, 'SuppForcing':{}}
+    out_yaml = {'Input':[],'Output':{},'Retrospective':{},'Forecast':{},'Geospatial':{},'Regridding':{}, 'SuppForcing':[]}
     custom_count = 0
     for i in range(len(config_params['input_forcings'])):
         input_dict = {}
@@ -95,6 +95,8 @@ def convert(config_file, yaml_file):
         input_dict['Downscaling']['Precip'] = config.DownScalePrecipEnum(config_params['precipDownscaleOpt'][i]).name
         input_dict['Downscaling']['Humidity'] = config.DownScaleHumidEnum(config_params['q2dDownscaleOpt'][i]).name
         input_dict['Downscaling']['ParamDir'] = config_params['dScaleParamDirs'][i]
+        if input_dict['Forcing'] == 'CFS_V2':
+            input_dict['Ensembles'] = {'cfsEnsNumber':config_params['cfsv2EnsMember']}
         out_yaml['Input'].append(input_dict)
 
     out_yaml['Output']['Frequency'] = config_params['output_freq']
@@ -126,27 +128,32 @@ def convert(config_file, yaml_file):
     out_yaml['Regridding']['WeightsDir'] = config_params['weightsDir']
 
     for i in range(len(config_params['supp_precip_forcings'])):
-        out_yaml['SuppForcing']['Pcp'] = config.SuppForcingPcpEnum(config_params['supp_precip_forcings'][i]).name
-        out_yaml['SuppForcing']['PcpType'] = config_params['supp_precip_file_types'][i]
-        out_yaml['SuppForcing']['PcpDir'] = config_params['supp_precip_dirs'][i]
-        out_yaml['SuppForcing']['PcpMandatory'] = bool(config_params['supp_precip_mandatory'][i])
-        out_yaml['SuppForcing']['RegirdOptPcp'] = config_params['regrid_opt_supp_pcp'][i]
-        out_yaml['SuppForcing']['PcpTemporalInterp'] = config_params['suppTemporalInterp'][i]
-        out_yaml['SuppForcing']['PcpInputOffsets'] = config_params['supp_input_offsets'][i]
+        supp_forcing_dict = {}
+        supp_forcing_dict['Pcp'] = config.SuppForcingPcpEnum(config_params['supp_precip_forcings'][i]).name
+        supp_forcing_dict['PcpType'] = config_params['supp_precip_file_types'][i]
+        supp_forcing_dict['PcpDir'] = config_params['supp_precip_dirs'][i]
+        supp_forcing_dict['PcpMandatory'] = bool(config_params['supp_precip_mandatory'][i])
+        supp_forcing_dict['RegridOptPcp'] = config_params['regrid_opt_supp_pcp'][i]
+        supp_forcing_dict['PcpTemporalInterp'] = config_params['suppTemporalInterp'][i]
+        supp_forcing_dict['PcpInputOffsets'] = config_params['supp_input_offsets'][i]
         if config_params['rqiMethod']:
-            out_yaml['SuppForcing']['RqiMethod'] = config.SuppForcingRqiMethodEnum(config_params['rqiMethod']).name
+            supp_forcing_dict['RqiMethod'] = config.SuppForcingRqiMethodEnum(config_params['rqiMethod']).name
         else:
-            out_yaml['SuppForcing']['RqiMethod'] = "NONE"
+            supp_forcing_dict['RqiMethod'] = "NONE"
         if config_params['rqiThresh']:
-            out_yaml['SuppForcing']['RqiThreshold'] = config_params['rqiThresh']
-        out_yaml['SuppForcing']['PcpParamDir'] = config_params['supp_precip_param_dir']
-        if config_params['cfsv2EnsMember']:
-            out_yaml['SuppForcings']['Ensembles']['cfsEnsNumber'] = config_params['cfsv2EnsMember'][i]
+            supp_forcing_dict['RqiThreshold'] = config_params['rqiThresh']
+        supp_forcing_dict['PcpParamDir'] = config_params['supp_precip_param_dir']
+        out_yaml['SuppForcing'].append(supp_forcing_dict)
 
-    print(yaml.dump(out_yaml,default_flow_style=False))
+    
+    #print(yaml.dump(out_yaml,default_flow_style=False))
+    with open(yaml_file,'w') as f:
+        yaml.dump(out_yaml,f,default_flow_style=False)
 
-    #pprint(compare_old_new(config_file, yaml_file))
-
+    
+    diff_set = compare_old_new(config_file, yaml_file)
+    if tuple(sorted([tup[0] for tup in diff_set])) != ('config_path','config_path','d_program_init','d_program_init'):
+        raise Exception("Conversion of %s -> %s failed. diff_set = %s" % (config_file, yaml_file, diff_set))
 
 def main():
     parser = argparse.ArgumentParser()
