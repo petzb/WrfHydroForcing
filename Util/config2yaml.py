@@ -10,6 +10,7 @@ import yaml
 
 import config
 import config_v1
+import yaml_comment_template as templ
 
 """
 Script to convert old-style WrfHydroForcing .config files to new-style .yaml
@@ -20,6 +21,20 @@ export PYTHONPATH=$PYTHONPATH:~/git/WrfHydroForcing/
 export PYTHONPATH=$PYTHONPATH:~/git/WrfHydroForcing/core
 ./config2yaml.py ../Test/template_forcing_engine_AnA_v2.config ../Test/template_forcing_engine_AnA_v2_example.yaml
 """
+
+class CommentDumper(yaml.SafeDumper):
+    def write_plain(self, text, split=True):
+        if len(self.indents) == 2 and text in {"Input", "Output", "Retrospective", "Forecast", "Geospatial", "Regridding", "SuppForcing", "Ensembles"}:
+            for comment_line in templ.comments[text].split("\n"):
+                #print(comment_line)
+                super().write_plain(comment_line,split)
+        super().write_plain(text, split)
+
+
+    def write_line_break(self, data=None):
+        super().write_line_break(data)
+        if len(self.indents) == 1:
+            super().write_line_break()
 
 
 def conv_class_2_set(klass):
@@ -146,7 +161,7 @@ def convert(config_file, yaml_file):
         out_yaml['SuppForcing'].append(supp_forcing_dict)
 
     
-    #print(yaml.dump(out_yaml,default_flow_style=False))
+    print(yaml.dump(out_yaml,Dumper=CommentDumper,default_flow_style=False))
     with open(yaml_file,'w') as f:
         yaml.dump(out_yaml,f,default_flow_style=False)
 
