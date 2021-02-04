@@ -22,15 +22,7 @@ export PYTHONPATH=$PYTHONPATH:~/git/WrfHydroForcing/core
 ./config2yaml.py ../Test/template_forcing_engine_AnA_v2.config ../Test/template_forcing_engine_AnA_v2_example.yaml
 """
 
-class CommentDumper(yaml.SafeDumper):
-    def write_plain(self, text, split=True):
-        if len(self.indents) == 2 and text in {"Input", "Output", "Retrospective", "Forecast", "Geospatial", "Regridding", "SuppForcing", "Ensembles"}:
-            for comment_line in templ.comments[text].split("\n"):
-                #print(comment_line)
-                super().write_plain(comment_line,split)
-        super().write_plain(text, split)
-
-
+class SpaceDumper(yaml.SafeDumper):
     def write_line_break(self, data=None):
         super().write_line_break(data)
         if len(self.indents) == 1:
@@ -161,14 +153,30 @@ def convert(config_file, yaml_file):
         out_yaml['SuppForcing'].append(supp_forcing_dict)
 
     
-    print(yaml.dump(out_yaml,Dumper=CommentDumper,default_flow_style=False))
+    #print(yaml.dump(out_yaml,Dumper=SpaceDumper,default_flow_style=False))
     with open(yaml_file,'w') as f:
-        yaml.dump(out_yaml,f,default_flow_style=False)
+        yaml.dump(out_yaml,f,Dumper=SpaceDumper,default_flow_style=False)
 
     
     diff_set = compare_old_new(config_file, yaml_file)
     if tuple(sorted([tup[0] for tup in diff_set])) != ('config_path','config_path','d_program_init','d_program_init'):
         raise Exception("Conversion of %s -> %s failed. diff_set = %s" % (config_file, yaml_file, diff_set))
+
+
+def add_comments(yaml_file):
+    lines = []
+    with open(yaml_file) as f:
+        lines.append(templ.comments['Header'])
+        for line in f.readlines():
+            line = line.rstrip()
+            if line in {"Input:", "Output:", "Retrospective:", "Forecast:", "Geospatial:", "Regridding:", "SuppForcing:", "Ensembles:"}:
+                lines.append(templ.comments[line[:-1]])
+            lines.append(line)
+    
+    #print("\n".join(lines))
+    with open(yaml_file, "w") as f:
+        f.write("\n".join(lines))
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -176,6 +184,7 @@ def main():
     parser.add_argument('yaml_file',type=str,help='Output new-style .yaml file')
     args = parser.parse_args()
     convert(args.config_file,args.yaml_file)
+    add_comments(args.yaml_file)
 
 
 if __name__ == '__main__':

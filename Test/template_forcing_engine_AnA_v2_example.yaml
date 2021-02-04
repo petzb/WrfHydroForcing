@@ -1,9 +1,4 @@
-#Module provides a template of yaml comment headers to insert for each section of 
-#auto-generated yaml config
-
-comments = {
-'Header' : 
-"""#Document start
+#Document start
 ---
 # WRF-Hydro Forcing Engine YAML Configuration File
 #
@@ -16,9 +11,77 @@ comments = {
 # 5.) Choices for optional bias correction techniques.
 # 6.) Choices for optional supplemental precipitation products.
 # 7.) Choices for optional ensemble member variations.
-# 8.) Choices for output directories to place final output files.""",
-'Input' : 
-"""#Input Example With Two Separate Inputs (a YAML list of input parameters)
+# 8.) Choices for output directories to place final output files.
+#Forecast Example
+#
+# Forecast:
+#  AnAFlag: True
+#  LookBack: 180
+#  RefcstBDateProc: 202009152300
+#  RefcstEDateProc: 202009160000
+#  Frequency: 60
+#  Shift: 0
+#
+# Forecast['AnAFlag']
+# Specify if this is an Analysis and Assimilation run (AnA).
+# True - AnA run
+# False
+# Setting this flag will change the behavior of some Bias Correction routines as wel
+# as the ForecastInputOffsets options (see below for more information)
+#
+#Forecast['LookBack']
+# ONLY for realtime forecasting.
+# Specify a lookback period in minutes to process data.
+# This overrides any BDateProc/EDateProc options passed above.
+# If no LookBack specified, please specify -9999.
+#
+#Forecast['RefcstBDateProc']
+#Forecast['RefcstEDateProc']
+# If running reforecasts, specify a window below. This will override
+# using the LookBack value to calculate a processing window.
+#
+#Forecast['Frequency']
+# Specify a forecast frequency in minutes. This value specifies how often
+# to generate a set of forecast forcings. If generating hourly retrospective
+# forcings, specify this value to be 60. =
+#
+#Forecast['Shift']
+# Forecast cycles are determined by splitting up a day by equal
+# ForecastFrequency interval. If there is a desire to shift the
+# cycles to a different time step, ForecastShift will shift forecast
+# cycles ahead by a determined set of minutes. For example, ForecastFrequency
+# of 6 hours will produce forecasts cycles at 00, 06, 12, and 18 UTC. However,
+# a ForecastShift of 1 hour will produce forecast cycles at 01, 07,
+# 13, and 18 UTC. NOTE - This is only used by the realtime instance
+# to calculate forecast cycles accordingly. Re-forecasts will use the beginning
+# and ending dates specified in conjunction with the forecast frequency
+# to determine forecast cycle dates.
+Forecast:
+  AnAFlag: true
+  Frequency: 60
+  LookBack: 180
+  RefcstBDateProc: '202009152300'
+  RefcstEDateProc: '202009160000'
+  Shift: 0
+
+#Geospatial Example
+#
+# Geospatial:
+#  GeogridIn: /glade/p/cisl/nwc/nwmv20_finals/CONUS/DOMAIN/geo_em.d01.conus_1km_NWMv2.0.nc
+#  SpatialMetaIn: /glade/p/cisl/nwc/nwmv20_finals/CONUS/DOMAIN/GEOGRID_LDASOUT_Spatial_Metadata_1km_NWMv2.0.nc
+#
+# Geospatial['GeogridIn']
+# Specify a geogrid file that defines the WRF-Hydro (or NWM) domain to which
+# the forcings are being processed to.
+#
+# Geospatial['SpatialMetaIn']
+# Specify the optional land spatial metadata file. If found, coordinate projection information
+# and coordinate will be translated from to the final output file.
+Geospatial:
+  GeogridIn: /glade/p/cisl/nwc/nwmv20_finals/CONUS/DOMAIN/geo_em.d01.conus_1km_NWMv2.0.nc
+  SpatialMetaIn: /glade/p/cisl/nwc/nwmv20_finals/CONUS/DOMAIN/GEOGRID_LDASOUT_Spatial_Metadata_1km_NWMv2.0.nc
+
+#Input Example With Two Separate Inputs (a YAML list of input parameters)
 #
 #Input:
 # - Forcing: RAP
@@ -243,9 +306,58 @@ comments = {
 # REGRID_TEMP_PRESS - Use regridded humidity, along with downscaled temperature/pressure to extrapolate a downscaled surface specific humidty.
 #
 # Input[i]['Downscaling']['ParamDir']
-# Specify the input parameter directory containing necessary downscaling grids.""",
-'Output' : 
-"""#Output Example
+# Specify the input parameter directory containing necessary downscaling grids.
+Input:
+- BiasCorrection:
+    Humidity: NONE
+    Longwave: NONE
+    Precip: NONE
+    Pressure: NONE
+    Shortwave: NONE
+    Temperature: NONE
+    Wind: NONE
+  Dir: /glade/p/ral/allral/zhangyx/RAP_Conus
+  Downscaling:
+    Humidity: REGRID_TEMP_PRESS
+    ParamDir: /glade/p/cisl/nwc/nwm_forcings/NWM_v21_Params/AnA
+    Precip: NONE
+    Pressure: ELEV
+    Shortwave: ELEV
+    Temperature: LAPSE_PRE_CALC
+  Forcing: RAP
+  Horizon: 60
+  IgnoredBorderWidths: 0
+  Mandatory: true
+  Offset: 0
+  RegriddingOpt: ESMF_BILINEAR
+  TemporalInterp: NONE
+  Type: GRIB2
+- BiasCorrection:
+    Humidity: NONE
+    Longwave: CUSTOM
+    Precip: NONE
+    Pressure: NONE
+    Shortwave: CUSTOM
+    Temperature: HRRR
+    Wind: HRRR
+  Dir: /glade/p/ral/allral/zhangyx/HRRR_Conus
+  Downscaling:
+    Humidity: REGRID_TEMP_PRESS
+    ParamDir: /glade/p/cisl/nwc/nwm_forcings/NWM_v21_Params/AnA
+    Precip: NONE
+    Pressure: ELEV
+    Shortwave: ELEV
+    Temperature: LAPSE_PRE_CALC
+  Forcing: HRRR
+  Horizon: 60
+  IgnoredBorderWidths: 5
+  Mandatory: true
+  Offset: 0
+  RegriddingOpt: ESMF_BILINEAR
+  TemporalInterp: NONE
+  Type: GRIB2
+
+#Output Example
 #
 #Output:
 # Frequency: 60
@@ -281,9 +393,22 @@ comments = {
 # Flag to activate netCDF4 deflate compression in the output files.
 # False - Deactivate compression
 # True - Activate compression
-""",
-'Retrospective' : 
-"""#Retrospective Example
+
+Output:
+  CompressOutput: false
+  Dir: /glade/scratch/bpetzke/ForcingEngine/Test/AnA
+  FloatOutput: SCALE_OFFSET
+  Frequency: 60
+  ScratchDir: /glade/scratch/bpetzke/ForcingEngine/Test/AnA
+
+#Regridding Example
+#
+# Regridding:
+#  WeightsDir: /glade/p/cisl/nwc/nwm_forcings/ESMFWeightFiles
+Regridding:
+  WeightsDir: /glade/p/cisl/nwc/nwm_forcings/ESMFWeightFiles
+
+#Retrospective Example
 #
 # Retrospective:
 #  Flag: False
@@ -300,73 +425,11 @@ comments = {
 # Choose the beginning date of processing forcing files.
 # NOTE - Dates are given in YYYYMMDDHHMM format
 # If in real-time forecasting mode, leave as -9999.
-# These dates get over-ridden in lookBackHours.""",
-'Forecast' : 
-"""#Forecast Example
-#
-# Forecast:
-#  AnAFlag: True
-#  LookBack: 180
-#  RefcstBDateProc: 202009152300
-#  RefcstEDateProc: 202009160000
-#  Frequency: 60
-#  Shift: 0
-#
-# Forecast['AnAFlag']
-# Specify if this is an Analysis and Assimilation run (AnA).
-# True - AnA run
-# False
-# Setting this flag will change the behavior of some Bias Correction routines as wel
-# as the ForecastInputOffsets options (see below for more information)
-#
-#Forecast['LookBack']
-# ONLY for realtime forecasting.
-# Specify a lookback period in minutes to process data.
-# This overrides any BDateProc/EDateProc options passed above.
-# If no LookBack specified, please specify -9999.
-#
-#Forecast['RefcstBDateProc']
-#Forecast['RefcstEDateProc']
-# If running reforecasts, specify a window below. This will override
-# using the LookBack value to calculate a processing window.
-#
-#Forecast['Frequency']
-# Specify a forecast frequency in minutes. This value specifies how often
-# to generate a set of forecast forcings. If generating hourly retrospective
-# forcings, specify this value to be 60. =
-#
-#Forecast['Shift']
-# Forecast cycles are determined by splitting up a day by equal
-# ForecastFrequency interval. If there is a desire to shift the
-# cycles to a different time step, ForecastShift will shift forecast
-# cycles ahead by a determined set of minutes. For example, ForecastFrequency
-# of 6 hours will produce forecasts cycles at 00, 06, 12, and 18 UTC. However,
-# a ForecastShift of 1 hour will produce forecast cycles at 01, 07,
-# 13, and 18 UTC. NOTE - This is only used by the realtime instance
-# to calculate forecast cycles accordingly. Re-forecasts will use the beginning
-# and ending dates specified in conjunction with the forecast frequency
-# to determine forecast cycle dates.""",
-'Geospatial' : 
-"""#Geospatial Example
-#
-# Geospatial:
-#  GeogridIn: /glade/p/cisl/nwc/nwmv20_finals/CONUS/DOMAIN/geo_em.d01.conus_1km_NWMv2.0.nc
-#  SpatialMetaIn: /glade/p/cisl/nwc/nwmv20_finals/CONUS/DOMAIN/GEOGRID_LDASOUT_Spatial_Metadata_1km_NWMv2.0.nc
-#
-# Geospatial['GeogridIn']
-# Specify a geogrid file that defines the WRF-Hydro (or NWM) domain to which
-# the forcings are being processed to.
-#
-# Geospatial['SpatialMetaIn']
-# Specify the optional land spatial metadata file. If found, coordinate projection information
-# and coordinate will be translated from to the final output file.""",
-'Regridding' : 
-"""#Regridding Example
-#
-# Regridding:
-#  WeightsDir: /glade/p/cisl/nwc/nwm_forcings/ESMFWeightFiles""",
-'SuppForcing' : 
-"""# SuppForcing Example
+# These dates get over-ridden in lookBackHours.
+Retrospective:
+  Flag: false
+
+# SuppForcing Example
 #
 #SuppForcing:
 # - Pcp: MRMR_CONUS_MS
@@ -441,15 +504,15 @@ comments = {
 #SuppForcing[i]['PcpParamDir']
 # Specify an optional directory that contains supplemental precipitation parameter fields,
 # I.E monthly RQI climatology
-""",
-'Ensembles' : 
-"""# Ensembles Example
-#
-# Ensembles:
-#  cfsEnsNumber: []
-#
-# Ensembles['cfsEnsNumber'][i]
-# Choose ensemble options for each input forcing file being used. Ensemble options include:
-# 1, 2, 3, 4
-# Choose the CFS ensemble member number to process"""
-}
+
+SuppForcing:
+- Pcp: MRMS_CONUS_MS
+  PcpDir: /glade/p/ral/allral/zhangyx/CONUS.MRMS
+  PcpInputOffsets: 0
+  PcpMandatory: false
+  PcpParamDir: /glade/p/cisl/nwc/nwm_forcings/NWM_v21_Params/AnA
+  PcpTemporalInterp: 0
+  PcpType: GRIB2
+  RegridOptPcp: 1
+  RqiMethod: NONE
+  RqiThreshold: 1.0
