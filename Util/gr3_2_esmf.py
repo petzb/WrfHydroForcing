@@ -40,7 +40,7 @@ class gr3:
 
 def parse_gr3_file(gr3_input):
     """
-    Parses a file in the following format.
+    Parses a .gr3 file
 
     gr3 format:
     Line 1: File name (this line is ignored by the model)
@@ -61,14 +61,14 @@ def parse_gr3_file(gr3_input):
             gr3_obj.elevs[i] = float(elev)
         for i in range(gr3_obj.num_elem):
             elem_num,node_count,*node_lst = f.readline().split()
-            gr3_obj.elems[i] = list(map(int,node_lst))
+            gr3_obj.elems[i] = list(map(lambda x: int(x)-1,node_lst))
         
     return gr3_obj
 
 
 def write_nc_mesh(gr3_obj,esmf_output):
     """
-    Writes an hgrid.gr3 object to netcdf in the following ESMF format.
+    Writes an hgrid.gr3 object to netcdf in the ESMF unstructured mesh format
 
     ESMF unstructured grid:
     https://earthsystemmodeling.org/docs/release/ESMF_8_0_1/ESMF_refdoc/node3.html#SECTION03028200000000000000
@@ -82,7 +82,7 @@ def write_nc_mesh(gr3_obj,esmf_output):
     node_count_dim = nc.createDimension("coordDim", 2)
     
     node_coords_var = nc.createVariable("nodeCoords","f8",("nodeCount","coordDim"))
-    node_coords_var.nodeCoords:units = "degrees"
+    node_coords_var.units = "degrees"
     elem_conn_var = nc.createVariable("elementConn","i",("elementCount","maxNodePElement"),fill_value=-1)
     elem_conn_var.long_name = "Node Indices that define the element connectivity"
     elem_conn_var.start_index = 0
